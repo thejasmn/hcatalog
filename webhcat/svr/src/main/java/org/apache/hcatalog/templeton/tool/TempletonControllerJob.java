@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -23,8 +23,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hcatalog.templeton.SecureProxySupport;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 
 /**
@@ -66,32 +69,32 @@ import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIden
  *   in hdfs files.
  */
 public class TempletonControllerJob extends Configured implements Tool {
-    static enum ControllerCounters {SIMPLE_COUNTER}
+    static enum ControllerCounters { SIMPLE_COUNTER };
 
-    ;
-
-    public static final String COPY_NAME = "templeton.copy";
+    public static final String COPY_NAME      = "templeton.copy";
     public static final String STATUSDIR_NAME = "templeton.statusdir";
-    public static final String JAR_ARGS_NAME = "templeton.args";
+    public static final String JAR_ARGS_NAME  = "templeton.args";
     public static final String OVERRIDE_CLASSPATH = "templeton.override-classpath";
 
-    public static final String STDOUT_FNAME = "stdout";
-    public static final String STDERR_FNAME = "stderr";
-    public static final String EXIT_FNAME = "exit";
+    public static final String STDOUT_FNAME  = "stdout";
+    public static final String STDERR_FNAME  = "stderr";
+    public static final String EXIT_FNAME    = "exit";
 
     public static final int WATCHER_TIMEOUT_SECS = 10;
-    public static final int KEEP_ALIVE_MSEC = 60 * 1000;
+    public static final int KEEP_ALIVE_MSEC      = 60 * 1000;
 
     private static TrivialExecService execService = TrivialExecService.getInstance();
 
     private static final Log LOG = LogFactory.getLog(TempletonControllerJob.class);
-
-
+    
+    
     public static class LaunchMapper
-        extends Mapper<NullWritable, NullWritable, Text, Text> {
+        extends Mapper<NullWritable, NullWritable, Text, Text>
+    {
         protected Process startJob(Context context, String user,
                                    String overrideClasspath)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException
+        {
             Configuration conf = context.getConfiguration();
             copyLocal(COPY_NAME, conf);
             String[] jarArgs
@@ -99,23 +102,22 @@ public class TempletonControllerJob extends Configured implements Tool {
 
             ArrayList<String> removeEnv = new ArrayList<String>();
             removeEnv.add("HADOOP_ROOT_LOGGER");
+            removeEnv.add("hadoop-command");
+            removeEnv.add("CLASS");
+            removeEnv.add("mapredcommand");
             Map<String, String> env = TempletonUtils.hadoopUserEnv(user,
-                overrideClasspath);
+                                                                   overrideClasspath);
             List<String> jarArgsList = new LinkedList<String>(Arrays.asList(jarArgs));
             String tokenFile = System.getenv("HADOOP_TOKEN_FILE_LOCATION");
-            if (tokenFile != null) {
-              /*
-               * The magic number 3 comes from the fact that the -D option can 
-               * be only after the jar command line option but before other 
-               * options.
-               */
-                jarArgsList.add(3, "-Dmapreduce.job.credentials.binary=" + tokenFile);
+            if(tokenFile != null){
+                jarArgsList.add(3, "-Dmapreduce.job.credentials.binary=" + tokenFile );
             }
             return execService.run(jarArgsList, removeEnv, env);
         }
 
         private void copyLocal(String var, Configuration conf)
-            throws IOException {
+            throws IOException
+        {
             String[] filenames = TempletonUtils.decodeArray(conf.get(var));
             if (filenames != null) {
                 for (String filename : filenames) {
@@ -130,30 +132,32 @@ public class TempletonControllerJob extends Configured implements Tool {
 
         @Override
         public void run(Context context)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException
+        {
 
             Configuration conf = context.getConfiguration();
 
             Process proc = startJob(context,
-                conf.get("user.name"),
-                conf.get(OVERRIDE_CLASSPATH));
+                                    conf.get("user.name"),
+                                    conf.get(OVERRIDE_CLASSPATH));
+	    System.err.println("job started");
 
             String statusdir = conf.get(STATUSDIR_NAME);
             Counter cnt = context.getCounter(ControllerCounters.SIMPLE_COUNTER);
 
             ExecutorService pool = Executors.newCachedThreadPool();
             executeWatcher(pool, conf, context.getJobID(),
-                proc.getInputStream(), statusdir, STDOUT_FNAME);
+                           proc.getInputStream(), statusdir, STDOUT_FNAME);
             executeWatcher(pool, conf, context.getJobID(),
-                proc.getErrorStream(), statusdir, STDERR_FNAME);
+                           proc.getErrorStream(), statusdir, STDERR_FNAME);
             KeepAlive keepAlive = startCounterKeepAlive(pool, cnt);
-
+	    System.err.println("job watchers created");
             proc.waitFor();
             keepAlive.sendReport = false;
             pool.shutdown();
-            if (!pool.awaitTermination(WATCHER_TIMEOUT_SECS, TimeUnit.SECONDS))
+            if (! pool.awaitTermination(WATCHER_TIMEOUT_SECS, TimeUnit.SECONDS))
                 pool.shutdownNow();
-
+	    System.err.println("job done");
             writeExitValue(conf, proc.exitValue(), statusdir);
             JobState state = new JobState(context.getJobID().toString(), conf);
             state.setExitValue(proc.exitValue());
@@ -162,7 +166,7 @@ public class TempletonControllerJob extends Configured implements Tool {
 
             if (proc.exitValue() != 0)
                 System.err.println("templeton: job failed with exit code "
-                    + proc.exitValue());
+                                   + proc.exitValue());
             else
                 System.err.println("templeton: job completed with exit code 0");
         }
@@ -170,26 +174,29 @@ public class TempletonControllerJob extends Configured implements Tool {
         private void executeWatcher(ExecutorService pool, Configuration conf,
                                     JobID jobid, InputStream in, String statusdir,
                                     String name)
-            throws IOException {
+            throws IOException
+        {
             Watcher w = new Watcher(conf, jobid, in, statusdir, name);
             pool.execute(w);
         }
 
         private KeepAlive startCounterKeepAlive(ExecutorService pool, Counter cnt)
-            throws IOException {
+            throws IOException
+        {
             KeepAlive k = new KeepAlive(cnt);
             pool.execute(k);
             return k;
         }
 
         private void writeExitValue(Configuration conf, int exitValue, String statusdir)
-            throws IOException {
+            throws IOException
+        {
             if (TempletonUtils.isset(statusdir)) {
                 Path p = new Path(statusdir, EXIT_FNAME);
                 FileSystem fs = p.getFileSystem(conf);
                 OutputStream out = fs.create(p);
                 System.err.println("templeton: Writing exit value "
-                    + exitValue + " to " + p);
+                                   + exitValue + " to " + p);
                 PrintWriter writer = new PrintWriter(out);
                 writer.println(exitValue);
                 writer.close();
@@ -205,7 +212,8 @@ public class TempletonControllerJob extends Configured implements Tool {
 
         public Watcher(Configuration conf, JobID jobid, InputStream in,
                        String statusdir, String name)
-            throws IOException {
+            throws IOException
+        {
             this.conf = conf;
             this.jobid = jobid;
             this.in = in;
@@ -265,7 +273,8 @@ public class TempletonControllerJob extends Configured implements Tool {
         private Counter cnt;
         public boolean sendReport;
 
-        public KeepAlive(Counter cnt) {
+        public KeepAlive(Counter cnt)
+        {
             this.cnt = cnt;
             this.sendReport = true;
         }
@@ -284,7 +293,6 @@ public class TempletonControllerJob extends Configured implements Tool {
     }
 
     private JobID submittedJobId;
-
     public String getSubmittedId() {
         if (submittedJobId == null)
             return null;
@@ -297,7 +305,8 @@ public class TempletonControllerJob extends Configured implements Tool {
      */
     @Override
     public int run(String[] args)
-        throws IOException, InterruptedException, ClassNotFoundException {
+        throws IOException, InterruptedException, ClassNotFoundException
+    {
         Configuration conf = getConf();
         conf.set(JAR_ARGS_NAME, TempletonUtils.encodeArray(args));
         conf.set("user.name", UserGroupInformation.getCurrentUser().getShortUserName());
@@ -312,9 +321,9 @@ public class TempletonControllerJob extends Configured implements Tool {
             = new NullOutputFormat<NullWritable, NullWritable>();
         job.setOutputFormatClass(of.getClass());
         job.setNumReduceTasks(0);
-
+        
         JobClient jc = new JobClient(new JobConf(job.getConfiguration()));
-
+        
         Token<DelegationTokenIdentifier> mrdt = jc.getDelegationToken(new Text("mr token"));
         job.getCredentials().addToken(new Text("mr token"), mrdt);
         job.submit();
@@ -324,7 +333,7 @@ public class TempletonControllerJob extends Configured implements Tool {
         return 0;
     }
 
-
+    
     public static void main(String[] args) throws Exception {
         int ret = ToolRunner.run(new TempletonControllerJob(), args);
         if (ret != 0)

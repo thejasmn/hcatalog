@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,22 +20,26 @@ package org.apache.hcatalog.templeton.tool;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.StringUtils;
 
 /**
@@ -68,14 +72,14 @@ public class TempletonUtils {
      * Is the object non-empty?
      */
     public static <T> boolean isset(Collection<T> col) {
-        return (col != null) && (!col.isEmpty());
+        return (col != null) && (! col.isEmpty());
     }
 
     /**
      * Is the object non-empty?
      */
     public static <K, V> boolean isset(Map<K, V> col) {
-        return (col != null) && (!col.isEmpty());
+        return (col != null) && (! col.isEmpty());
     }
 
 
@@ -163,7 +167,8 @@ public class TempletonUtils {
     public static String[] hadoopFsListAsArray(String files, Configuration conf,
                                                String user)
         throws URISyntaxException, FileNotFoundException, IOException,
-        InterruptedException {
+        InterruptedException
+    {
         if (files == null || conf == null) {
             return null;
         }
@@ -179,7 +184,8 @@ public class TempletonUtils {
     public static String hadoopFsListAsString(String files, Configuration conf,
                                               String user)
         throws URISyntaxException, FileNotFoundException, IOException,
-        InterruptedException {
+        InterruptedException
+    {
         if (files == null || conf == null) {
             return null;
         }
@@ -188,7 +194,8 @@ public class TempletonUtils {
 
     public static String hadoopFsFilename(String fname, Configuration conf, String user)
         throws URISyntaxException, FileNotFoundException, IOException,
-        InterruptedException {
+        InterruptedException
+    {
         Path p = hadoopFsPath(fname, conf, user);
         if (p == null)
             return null;
@@ -201,8 +208,8 @@ public class TempletonUtils {
      */
     public static boolean hadoopFsIsMissing(FileSystem fs, Path p) {
         try {
-            return !fs.exists(p);
-        } catch (Throwable t) {
+            return ! fs.exists(p);
+        } catch(Throwable t) {
             // Got an error, might be there anyway due to a
             // permissions problem.
             return false;
@@ -211,7 +218,8 @@ public class TempletonUtils {
 
     public static Path hadoopFsPath(String fname, Configuration conf, String user)
         throws URISyntaxException, FileNotFoundException, IOException,
-        InterruptedException {
+        InterruptedException
+    {
         if (fname == null || conf == null) {
             return null;
         }
@@ -221,13 +229,13 @@ public class TempletonUtils {
 
         UserGroupInformation ugi = UserGroupInformation.getLoginUser();
         final FileSystem defaultFs = 
-                ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
-                    public FileSystem run() 
-                        throws URISyntaxException, FileNotFoundException, IOException,
-                            InterruptedException {
-                        return FileSystem.get(new URI(finalFName), fConf);
-                    }
-                });
+        ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
+           public FileSystem run() 
+            throws URISyntaxException, FileNotFoundException, IOException,
+                InterruptedException {
+               return FileSystem.get(new URI(finalFName), fConf);
+           }
+       });
 
         URI u = new URI(fname);
         Path p = new Path(u).makeQualified(defaultFs);
@@ -242,7 +250,8 @@ public class TempletonUtils {
      * GET the given url.  Returns the number of bytes received.
      */
     public static int fetchUrl(URL url)
-        throws IOException {
+        throws IOException
+    {
         URLConnection cnx = url.openConnection();
         InputStream in = cnx.getInputStream();
 
@@ -259,7 +268,8 @@ public class TempletonUtils {
      * Set the environment variables to specify the hadoop user.
      */
     public static Map<String, String> hadoopUserEnv(String user,
-                                                    String overrideClasspath) {
+                                                    String overrideClasspath)
+    {
         HashMap<String, String> env = new HashMap<String, String>();
         env.put("HADOOP_USER_NAME", user);
 
@@ -272,5 +282,13 @@ public class TempletonUtils {
         }
 
         return env;
+    }
+
+    public static void addCmdForWindows(ArrayList<String> args) {
+        if(Shell.WINDOWS){    
+            args.add("cmd");
+            args.add("/c");
+            args.add("call");
+        }
     }
 }

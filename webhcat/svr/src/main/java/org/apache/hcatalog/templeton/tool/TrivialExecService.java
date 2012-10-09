@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,13 +21,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Execute a local program.  This is a singleton service that will
  * execute a programs on the local box.
  */
 public class TrivialExecService {
     private static volatile TrivialExecService theSingleton;
-
+    private static final Log LOG = LogFactory.getLog(TrivialExecService.class);
     /**
      * Retrieve the singleton.
      */
@@ -39,17 +42,35 @@ public class TrivialExecService {
 
     public Process run(List<String> cmd, List<String> removeEnv,
                        Map<String, String> environmentVariables)
-        throws IOException {
-        System.err.println("templeton: starting " + cmd);
-        System.err.print("With environment variables: ");
-        for (Map.Entry<String, String> keyVal : environmentVariables.entrySet()) {
-            System.err.println(keyVal.getKey() + "=" + keyVal.getValue());
-        }
+        throws IOException
+    {
+        
+        logDebugCmd(cmd, environmentVariables);
+
+
         ProcessBuilder pb = new ProcessBuilder(cmd);
         for (String key : removeEnv)
             pb.environment().remove(key);
         pb.environment().putAll(environmentVariables);
         return pb.start();
+    }
+
+    private void logDebugCmd(List<String> cmd,
+            Map<String, String> environmentVariables) {
+        if(!LOG.isDebugEnabled()){
+            return;
+        }
+        LOG.debug("starting " + cmd);
+        LOG.debug("With environment variables: " );
+        for(Map.Entry<String, String> keyVal : environmentVariables.entrySet()){
+            LOG.debug(keyVal.getKey() + "=" + keyVal.getValue());
+        }
+        LOG.debug("With environment variables already set: " );
+        Map<String, String> env = System.getenv();
+        for (String envName : env.keySet()) {
+            LOG.debug(envName + "=" + env.get(envName));
+        }   
+        
     }
 
 }

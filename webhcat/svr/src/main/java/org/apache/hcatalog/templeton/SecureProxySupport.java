@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -49,29 +49,27 @@ public class SecureProxySupport {
 
     public SecureProxySupport() {
         isEnabled = UserGroupInformation.isSecurityEnabled();
+        LOG.debug("Hadoop security is " + (isEnabled ? "" : "not ") + "enabled");
     }
 
     private static final Log LOG = LogFactory.getLog(SecureProxySupport.class);
-
+    
     /**
      * The file where we store the auth token
      */
-    public Path getTokenPath() {
-        return (tokenPath);
-    }
+    public Path getTokenPath() { return( tokenPath ); }
 
     /**
      * The token to pass to hcat.
      */
-    public String getHcatServiceStr() {
-        return (HCAT_SERVICE);
-    }
+    public String getHcatServiceStr() { return( HCAT_SERVICE ); }
 
     /**
      * Create the delegation token.
      */
     public Path open(String user, Configuration conf)
-        throws IOException, InterruptedException {
+        throws IOException, InterruptedException
+    {
         close();
         if (isEnabled) {
             this.user = user;
@@ -88,7 +86,7 @@ public class SecureProxySupport {
             msToken.decodeFromUrlString(hcatTokenStr);
             msToken.setService(new Text(HCAT_SERVICE));
             writeProxyDelegationTokens(fsToken, msToken, conf, user, tokenPath);
-
+            
         }
         return tokenPath;
     }
@@ -109,7 +107,7 @@ public class SecureProxySupport {
     public void addEnv(Map<String, String> env) {
         if (isEnabled) {
             env.put(UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION,
-                getTokenPath().toUri().getPath());
+                    getTokenPath().toUri().getPath());
         }
     }
 
@@ -121,17 +119,18 @@ public class SecureProxySupport {
             args.add("-D");
             args.add("hive.metastore.token.signature=" + getHcatServiceStr());
             args.add("-D");
-            args.add("proxy.user.name=" + user);
+            args.add("proxy.user.name=" + user);            
         }
     }
-
-    class TokenWrapper {
+    
+    class TokenWrapper { 
         Token<?> token;
     }
 
     private Token<?> getFSDelegationToken(String user,
-                                          final Configuration conf)
-        throws IOException, InterruptedException {
+                                           final Configuration conf)
+        throws IOException, InterruptedException
+    {
         LOG.info("user: " + user + " loginUser: " + UserGroupInformation.getLoginUser().getUserName());
         final UserGroupInformation ugi = UgiFactory.getUgi(user);
 
@@ -139,7 +138,7 @@ public class SecureProxySupport {
         ugi.doAs(new PrivilegedExceptionAction<Object>() {
             public Object run() throws IOException {
                 FileSystem fs = FileSystem.get(conf);
-                twrapper.token = fs.getDelegationToken(ugi.getShortUserName());
+                twrapper.token =  fs.getDelegationToken(ugi.getShortUserName());
                 return null;
             }
         });
@@ -148,43 +147,45 @@ public class SecureProxySupport {
     }
 
     private void writeProxyDelegationTokens(final Token<?> fsToken,
-                                            final Token<?> msToken,
-                                            final Configuration conf,
-                                            String user,
-                                            final Path tokenPath)
-        throws IOException, InterruptedException {
-
-
+            final Token<?> msToken,
+            final Configuration conf,
+            String user,
+            final Path tokenPath)
+                    throws IOException, InterruptedException{
+        
+        
         LOG.info("user: " + user + " loginUser: " + UserGroupInformation.getLoginUser().getUserName());
-        final UserGroupInformation ugi = UgiFactory.getUgi(user);
+        final UserGroupInformation ugi  =  UgiFactory.getUgi(user);
 
-
+        
         ugi.doAs(new PrivilegedExceptionAction<Object>() {
-            public Object run() throws IOException {
-                Credentials cred = new Credentials();
-                cred.addToken(fsToken.getService(), fsToken);
-                cred.addToken(msToken.getService(), msToken);
-                cred.writeTokenStorageFile(tokenPath, conf);
-                return null;
-            }
-        });
-
+                     public Object run() throws IOException {
+                         Credentials cred = new Credentials();
+                         cred.addToken(fsToken.getService(), fsToken);
+                         cred.addToken(msToken.getService(), msToken);
+                         cred.writeTokenStorageFile(tokenPath, conf);
+                         return null;
+                     }
+                 });
+        
     }
-
+    
     private String buildHcatDelegationToken(String user)
-        throws IOException, InterruptedException, MetaException, TException {
+        throws IOException, InterruptedException, MetaException, TException
+    {
         HiveConf c = new HiveConf();
         final HiveMetaStoreClient client = new HiveMetaStoreClient(c);
         LOG.info("user: " + user + " loginUser: " + UserGroupInformation.getLoginUser().getUserName());
         final TokenWrapper twrapper = new TokenWrapper();
         final UserGroupInformation ugi = UgiFactory.getUgi(user);
         String s = ugi.doAs(new PrivilegedExceptionAction<String>() {
-            public String run()
-                throws IOException, MetaException, TException {
-                String u = ugi.getUserName();
-                return client.getDelegationToken(u);
-            }
-        });
+                                public String run()
+                                    throws IOException, MetaException, TException
+                                {
+                                    String u = ugi.getUserName();
+                                    return client.getDelegationToken(u);
+                                }
+                            });
         return s;
     }
 }
