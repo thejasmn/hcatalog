@@ -426,6 +426,21 @@
                 <include name="webhcat-java-client*.jar"/>
             </fileset>
         </copy>
+        <copy todir="${dist.dir}/share/webhcat/svr/" includeEmptyDirs="false">
+            <fileset dir="webhcat/svr/build">
+                <include name="webhcat-*.jar"/>
+            </fileset>
+        </copy>
+        <copy todir="${dist.dir}/share/webhcat/svr/lib/" includeEmptyDirs="false">
+            <fileset dir="webhcat/svr/build/lib/compile/">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+        <copy todir="${dist.dir}/share/webhcat/client/" includeEmptyDirs="false">
+            <fileset dir="webhcat/java-client/build">
+                <include name="webhcat-java-client*.jar"/>
+            </fileset>
+        </copy>
 
         <copy todir="${dist.dir}/bin">
             <fileset dir="bin/">
@@ -446,7 +461,15 @@
         </copy>
 
         <copy todir="${dist.dir}/etc/${ant.project.name}">
-            <fileset dir="conf"/>
+            <fileset dir="conf">
+                <exclude name="webhcat*"/>
+            </fileset>
+        </copy>
+
+        <copy todir="${dist.dir}/etc/webhcat">
+            <fileset dir="conf">
+                <include name="webhcat*"/>
+            </fileset>
         </copy>
 
         <copy todir="${dist.dir}/share/${ant.project.name}/scripts">

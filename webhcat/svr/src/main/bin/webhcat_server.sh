@@ -70,7 +70,7 @@ function find_jar_path() {
 # Find the webhcat classpath
 function find_classpath() {
         local classpath=""
-        for dir in  "share/hcatalog"  "conf" ; do
+        for dir in  "share/webhcat/svr/" "share/webhcat/svr/lib/"  "conf" ; do
                 local path="$base_dir/$dir"
 
                 if [[ -d $path ]]; then

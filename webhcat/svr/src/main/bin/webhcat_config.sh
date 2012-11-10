@@ -58,8 +58,8 @@ then
 fi
 
 # Allow alternate conf dir location.
-if [ -e "${WEBHCAT_PREFIX}/conf/webhcat-env.sh" ]; then
-  DEFAULT_CONF_DIR=${WEBHCAT_PREFIX}/"conf"
+if [ -e "${WEBHCAT_PREFIX}/etc/webhcat/webhcat-env.sh" ]; then
+  DEFAULT_CONF_DIR=${WEBHCAT_PREFIX}/"etc/webhcat"
 else
   DEFAULT_CONF_DIR="/etc/webhcat"
 fi
