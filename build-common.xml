@@ -54,11 +54,19 @@
     <delete dir="${build.dir}"/>
   </target>
 
+  <target name="compile-resource" if="add.resources">
+    <echo message="Running compile resources"/>
+    <antcall target="resources">
+      <param name="src.dir" value="${basedir}/src/main/java"/>
+    </antcall>
+  </target>
+
   <target name="compile" depends="ivy-retrieve">
     <echo message="${ant.project.name}"/>
     <_javac srcDir="${basedir}/src/main/java"
             destDir="${build.classes}"
             classPathRef="compile.class.path"/>
+    <antcall target="compile-resource"/>
   </target>
 
   <target name="compile-test" depends="jar">
@@ -73,7 +81,7 @@
     <_junit srcDir="${basedir}/src/test/java"/>
   </target>
 
-  <target name="jar" depends="compile,mvn-init">
+  <target name="jar" depends="compile,mvn-init,compile-resource">
     <echo message="${ant.project.name}"/>
     <jar jarfile="${build.dir}/${jar.name}" basedir="${build.classes}">
       <metainf dir="${path.to.basedir}" includes="**/LICENSE.txt,**/NOTICE.txt"/>

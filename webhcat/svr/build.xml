@@ -20,6 +20,8 @@
   <property name="path.to.basedir" location="${basedir}/../.."/>
   <property name="pom.file" location="pom.xml"/>
 
+  <property name="add.resources" value="true"/>
+
   <import file="../../build-common.xml"/>
 
   <path id="compile.class.path">
@@ -39,5 +41,26 @@
 
   <!-- Use Maven (instead of Ivy) for dependencies. -->
   <target name="ivy-retrieve" depends="mvn-dependencies"/>
+
+  <target name="resources">
+    <property name="resources.dir"  location="${path.to.basedir}/conf"/>
+
+     <echo message="Generating wadl xml file"/>
+     <mkdir dir="${build.classes}"/>
+     <copy todir="${build.classes}/">
+       <fileset dir="${resources.dir}" includes="templeton*"/>
+     </copy>
+     <javadoc access="public" classpathref="compile.class.path">
+       <fileset dir="${src.dir}" defaultexcludes="yes">
+       </fileset>
+       <doclet name="com.sun.jersey.wadl.resourcedoc.ResourceDoclet"
+         pathref="compile.class.path">
+         <param name="-output" value="${build.classes}/resourcedoc.xml" />
+       </doclet>
+     </javadoc>
+ 
+   </target>
+ 
+
 
 </project>
