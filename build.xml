@@ -439,7 +439,7 @@
                 <include name="*.jar"/>
             </fileset>
         </copy>
-        <copy todir="${dist.dir}/share/webhcat/client/" includeEmptyDirs="false">
+        <copy todir="${dist.dir}/share/webhcat/java-client/" includeEmptyDirs="false">
             <fileset dir="webhcat/java-client/build">
                 <include name="webhcat-java-client*.jar"/>
             </fileset>
