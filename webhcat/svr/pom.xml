@@ -35,18 +35,32 @@
     <url>http://maven.apache.org</url>
 
     <dependencies>
+        
+        <!-- provided scope - made available as separate package
+          not packaged or added as dependency 
+        -->
+        
+        <dependency>
+            <groupId>org.apache.hcatalog</groupId>
+            <artifactId>hcatalog-core</artifactId>
+            <version>${hcatalog.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+            <version>${hadoop20.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- compile scope -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
             <version>${commons-exec.version}</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hcatalog</groupId>
-            <artifactId>hcatalog-core</artifactId>
-            <version>${hcatalog.version}</version>
-            <scope>compile</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty.aggregate</groupId>
             <artifactId>jetty-all-server</artifactId>
@@ -91,6 +105,8 @@
             <scope>compile</scope>
         </dependency>
 
+
+
         <!-- test scope -->
         <dependency>
             <groupId>junit</groupId>
@@ -105,4 +121,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
 </project>

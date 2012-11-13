@@ -26,6 +26,7 @@
 
   <path id="compile.class.path">
     <fileset dir="${build.dir}/lib/compile"/>
+    <fileset dir="${build.dir}/lib/provided"/>
   </path>
 
   <path id="test.class.path">

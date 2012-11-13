@@ -306,8 +306,11 @@
             <classpath>
                 <path refid="uber.classpath"/>
                 <fileset dir="hcatalog-pig-adapter/build/lib/compile"/>
+                <fileset dir="hcatalog-pig-adapter/build/lib/provided"/>
                 <fileset dir="server-extensions/build/lib/compile"/>
+                <fileset dir="server-extensions/build/lib/provided"/>
                 <fileset dir="webhcat/svr/build/lib/compile"/>
+                <fileset dir="webhcat/svr/build/lib/provided"/>
             </classpath>
             <group title="hcatalog" packages="org.apache.hcatalog.*"/>
         </javadoc>
