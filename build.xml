@@ -464,15 +464,11 @@
         </copy>
 
         <copy todir="${dist.dir}/etc/${ant.project.name}">
-            <fileset dir="conf">
-                <exclude name="webhcat*"/>
-            </fileset>
+            <fileset dir="conf"/>
         </copy>
 
         <copy todir="${dist.dir}/etc/webhcat">
-            <fileset dir="conf">
-                <include name="webhcat*"/>
-            </fileset>
+            <fileset dir="webhcat/svr/src/main/config/" />
         </copy>
 
         <copy todir="${dist.dir}/share/${ant.project.name}/scripts">
