@@ -21,6 +21,7 @@ package org.apache.hcatalog.templeton;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -95,6 +96,9 @@ public class AppConfig extends Configuration {
     public static final String TEMPLETON_JAR_NAME  = "templeton.jar";
     public static final String OVERRIDE_JARS_NAME  = "templeton.override.jars";
     public static final String OVERRIDE_JARS_ENABLED = "templeton.override.enabled";
+    public static final String TEMPLETON_CONTROLLER_MR_CHILD_OPTS 
+        = "templeton.controller.mr.child.opts";
+    
     public static final String KERBEROS_SECRET     = "templeton.kerberos.secret";
     public static final String KERBEROS_PRINCIPAL  = "templeton.kerberos.principal";
     public static final String KERBEROS_KEYTAB     = "templeton.kerberos.keytab";
@@ -103,12 +107,16 @@ public class AppConfig extends Configuration {
         = "templeton.callback.retry.interval";
     public static final String CALLBACK_RETRY_NAME
         = "templeton.callback.retry.attempts";
+    
+    //Hadoop property names (set by templeton logic)
     public static final String HADOOP_END_INTERVAL_NAME = "job.end.retry.interval";
     public static final String HADOOP_END_RETRY_NAME    = "job.end.retry.attempts";
     public static final String HADOOP_END_URL_NAME      = "job.end.notification.url";
     public static final String HADOOP_SPECULATIVE_NAME
         = "mapred.map.tasks.speculative.execution";
+    public static final String HADOOP_CHILD_JAVA_OPTS = "mapred.child.java.opts";
 
+    
     private static final Log LOG = LogFactory.getLog(AppConfig.class);
 
     public AppConfig() {
@@ -178,6 +186,22 @@ public class AppConfig extends Configuration {
     public String kerberosPrincipal(){ return get(KERBEROS_PRINCIPAL); }
     public String kerberosKeytab()   { return get(KERBEROS_KEYTAB); }
 
+    public String controllerMRChildOpts() {
+        //The default value of mapreduce child "-Xmx" (heap memory limit)
+        // might be close to what is allowed for a map task.
+        // Even if templeton  controller map task does not need much 
+        // memory, the jvm (with -server option?)
+        // allocates the max memory when it starts. This along with the 
+        // memory used by pig/hive client it starts can end up exceeding
+        // the max memory configured to be allowed for a map task
+        // Use this option to set -Xmx to lower value
+
+        return get(TEMPLETON_CONTROLLER_MR_CHILD_OPTS,
+                "-server -Xmx256m -Djava.net.preferIPv4Stack=true"); 
+    }
+    
+
+    
     public String[] overrideJars() {
         if (getBoolean(OVERRIDE_JARS_ENABLED, true))
             return getStrings(OVERRIDE_JARS_NAME);
